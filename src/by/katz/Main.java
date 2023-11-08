@@ -1,16 +1,14 @@
 package by.katz;
 
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -22,7 +20,6 @@ public class Main {
 
     private static final int TIMEOUT_MILLIS = 10000;
     private static final int THREADS_TO_CHECK = 50;
-    private static final int PROXY_TYPES_COUNT = 2;
     private static final File PROXY_LIST_FILE = new File("proxy_list.txt");
     private static final Proxy.Type[] PROXY_TYPES = new Proxy.Type[]{
           Proxy.Type.DIRECT,
@@ -31,6 +28,8 @@ public class Main {
     };
 
     public static void main(String[] args) throws IOException {
+        // 123.12.1.0:4321
+        // 123.12.1.0:4321,BY
         var pattern = Pattern.compile("(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}):(\\d+)(?:,.*)?");
         var proxyList = Files.readAllLines(PROXY_LIST_FILE.toPath()).stream()
               .map(s -> {
@@ -38,7 +37,7 @@ public class Main {
                       var matcher = pattern.matcher(s);
                       if (matcher.find()) {
                           var ipAddress = matcher.group(1);
-                          var port = matcher.group(PROXY_TYPES_COUNT);
+                          var port = matcher.group(2);
                           return new ProxyItem(ipAddress, Integer.parseInt(port));
                       }
                   } catch (Exception e) {e.printStackTrace();}
@@ -56,13 +55,12 @@ public class Main {
                       var address = new InetSocketAddress(proxyItem.path, proxyItem.port);
                       var proxy = new Proxy(proxyItem.proxyType, address);
                       try {
-                          System.out.print("\rTry: [" + counter.incrementAndGet() + "/" + proxyList.size() * PROXY_TYPES.length + "]" + proxyItem);
+                          System.out.printf("\rTry: [%d/%d]%s",
+                                counter.incrementAndGet(),
+                                proxyList.size() * PROXY_TYPES.length,
+                                proxyItem);
                           var startTime = new Date().getTime();
-                          var doc = Jsoup.connect("https://vk.com/")
-                                .timeout(TIMEOUT_MILLIS)
-                                .proxy(proxy)
-                                .get();
-                          var tmpElement = doc.selectFirst(".VkIdForm__header");
+                          var tmpElement = checkByVk(proxy);
                           if (tmpElement == null)
                               return null;
                           return proxyItem.setProxyType(proxyItem.proxyType)
@@ -73,7 +71,8 @@ public class Main {
               }));
         service.shutdown();
         try {
-            var res = service.awaitTermination((long) TIMEOUT_MILLIS * results.size() * PROXY_TYPES_COUNT, TimeUnit.MILLISECONDS);
+            var timeout = (long) TIMEOUT_MILLIS * results.size() * PROXY_TYPES.length;
+            var res = service.awaitTermination(timeout, TimeUnit.MILLISECONDS);
             if (!res) System.err.println("\nShutdown abnormally");
         } catch (InterruptedException e) {throw new RuntimeException(e);}
         System.out.println("\nReady proxies:");
@@ -85,9 +84,17 @@ public class Main {
                   } catch (InterruptedException | ExecutionException ignored) {}
                   return null;
               }).filter(Objects::nonNull)
-              .sorted((o1, o2) -> Long.compare(o2.getResponseTime(), o1.getResponseTime()))
+              .sorted(Comparator.comparingLong(ProxyItem::getResponseTime))
               .forEach(p -> System.out.println(">> " + p));
         service.shutdownNow();
+    }
+
+    private static Element checkByVk(Proxy proxy) throws IOException {
+        var doc = Jsoup.connect("https://vk.com/")
+              .timeout(TIMEOUT_MILLIS)
+              .proxy(proxy)
+              .get();
+        return doc.selectFirst(".VkIdForm__header");
     }
 
     @SuppressWarnings("UnusedReturnValue")
