@@ -50,7 +50,11 @@ class ProxyItem implements Cloneable {
 
     @Override public ProxyItem clone() {
         try {
-            return (ProxyItem) super.clone();
+            var clone = (ProxyItem) super.clone();
+            clone.proxyType = this.proxyType;
+            clone.responseTime = this.responseTime;
+            clone.response = this.response;
+            return clone;
         } catch (CloneNotSupportedException e) {
             throw new AssertionError();
         }

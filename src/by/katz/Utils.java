@@ -6,6 +6,8 @@ import org.jsoup.nodes.Element;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.Proxy;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
 import static by.katz.Main.TIMEOUT_MILLIS;
@@ -35,5 +37,12 @@ public class Utils {
         try {
             fw.write(p.toString());
         } catch (IOException e) {throw new RuntimeException(e);}
+    }
+
+    public static ProxyItem getProxyItemFromFuture(Future<ProxyItem> r) {
+        try {
+            return r.get();
+        } catch (InterruptedException | ExecutionException ignored) {}
+        return null;
     }
 }
