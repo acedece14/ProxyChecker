@@ -3,18 +3,6 @@ package by.katz;
 import java.net.Proxy;
 
 class ProxyItem implements Cloneable {
-    public String getPath() {
-        return path;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public Proxy.Type getProxyType() {
-        return proxyType;
-    }
-
     private final String path;
     private final int port;
     private Proxy.Type proxyType = null;
@@ -26,17 +14,23 @@ class ProxyItem implements Cloneable {
         this.port = port;
     }
 
+    public String getPath() {return path;}
+
+    public int getPort() {return port;}
+
+    public Proxy.Type getProxyType() {return proxyType;}
+
     public Long getResponseTime() {
         return responseTime;
     }
 
-    public ProxyItem setResponseTime(long responseTime) {
-        this.responseTime = responseTime;
+    public ProxyItem setProxyType(Proxy.Type proxyType) {
+        this.proxyType = proxyType;
         return this;
     }
 
-    public ProxyItem setProxyType(Proxy.Type proxyType) {
-        this.proxyType = proxyType;
+    public ProxyItem setResponseTime(long responseTime) {
+        this.responseTime = responseTime;
         return this;
     }
 

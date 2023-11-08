@@ -80,14 +80,11 @@ public class Main {
                   }).filter(Objects::nonNull)
                   .sorted(Comparator.comparingLong(ProxyItem::getResponseTime))
                   .forEach(p -> {
-                      try {
-                          fw.write(p.toString());
-                      } catch (IOException e) {throw new RuntimeException(e);}
+                      Utils.writeToFile(fw, p);
                       System.out.println(">> " + p);
                   });
         }
         service.shutdownNow();
     }
-
 
 }

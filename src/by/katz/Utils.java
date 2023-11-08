@@ -3,6 +3,7 @@ package by.katz;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.Proxy;
 import java.util.regex.Pattern;
@@ -10,7 +11,7 @@ import java.util.regex.Pattern;
 import static by.katz.Main.TIMEOUT_MILLIS;
 
 public class Utils {
-    static ProxyItem parseListItem(Pattern pattern, String s) {
+    public static ProxyItem parseListItem(Pattern pattern, String s) {
         try {
             var matcher = pattern.matcher(s);
             if (matcher.find()) {
@@ -22,11 +23,17 @@ public class Utils {
         return null;
     }
 
-    static Element checkByVk(Proxy proxy) throws IOException {
+    public static Element checkByVk(Proxy proxy) throws IOException {
         var doc = Jsoup.connect("https://vk.com/")
               .timeout(TIMEOUT_MILLIS)
               .proxy(proxy)
               .get();
         return doc.selectFirst(".VkIdForm__header");
+    }
+
+    public static void writeToFile(FileWriter fw, ProxyItem p) {
+        try {
+            fw.write(p.toString());
+        } catch (IOException e) {throw new RuntimeException(e);}
     }
 }
