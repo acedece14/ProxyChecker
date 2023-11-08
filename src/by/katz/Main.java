@@ -4,6 +4,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
@@ -26,6 +27,7 @@ public class Main {
           Proxy.Type.HTTP,
           Proxy.Type.SOCKS
     };
+    private static final File RESULTS_FILE = new File("results.txt");
 
     public static void main(String[] args) throws IOException {
         // 123.12.1.0:4321
@@ -76,16 +78,23 @@ public class Main {
             if (!res) System.err.println("\nShutdown abnormally");
         } catch (InterruptedException e) {throw new RuntimeException(e);}
         System.out.println("\nReady proxies:");
-        results.stream()
-              .filter(Objects::nonNull)
-              .map(r -> {
-                  try {
-                      return r.get();
-                  } catch (InterruptedException | ExecutionException ignored) {}
-                  return null;
-              }).filter(Objects::nonNull)
-              .sorted(Comparator.comparingLong(ProxyItem::getResponseTime))
-              .forEach(p -> System.out.println(">> " + p));
+        try (var fw = new FileWriter(RESULTS_FILE);) {
+            results.stream()
+                  .filter(Objects::nonNull)
+                  .map(r -> {
+                      try {
+                          return r.get();
+                      } catch (InterruptedException | ExecutionException ignored) {}
+                      return null;
+                  }).filter(Objects::nonNull)
+                  .sorted(Comparator.comparingLong(ProxyItem::getResponseTime))
+                  .forEach(p -> {
+                      try {
+                          fw.write(p.toString());
+                      } catch (IOException e) {throw new RuntimeException(e);}
+                      System.out.println(">> " + p);
+                  });
+        }
         service.shutdownNow();
     }
 
